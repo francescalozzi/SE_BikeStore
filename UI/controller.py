@@ -1,5 +1,4 @@
 from UI.view import View
-from database.dao import DAO
 from model.model import Model
 import flet as ft
 import datetime
@@ -21,13 +20,16 @@ class Controller:
         self._view.dp2.current_date = datetime.date(last.year, last.month, last.day)
 
     def populate_dd_category(self):
+        """ Metodo per popolare il dropdown contenente le categorie """
         categories = self._model.get_categories()
-        self._view.dd_category.options = [ft.dropdown.Option(key = c.category_name, data = c) for c in categories]
+        self._view.dd_category.options = [ft.dropdown.Option(key=c.category_name, data=c) for c in categories]
         self._view.update()
 
-    def choiche_category(self,e):
+    def choice_category(self, e):
+        # e.control è il Dropdown
         selected_key = e.control.value
 
+        # recupero l’oggetto Category associato
         for opt in e.control.options:
             if opt.key == selected_key:
                 self.dd_category_value = opt.data
@@ -53,6 +55,25 @@ class Controller:
         self._view.dd_prodotto_finale.options = [ft.dropdown.Option(key=c.product_name, data=c) for c in all_nodes]
         self._view.update()
 
+    def choice_prod_start(self, e):
+        # e.control è il Dropdown
+        selected_key = e.control.value
+
+        # recupero l’oggetto Product associato
+        for opt in e.control.options:
+            if opt.key == selected_key:
+                self.dd_prod_start_value = opt.data
+                break
+
+    def choice_prod_end(self, e):
+        # e.control è il Dropdown
+        selected_key = e.control.value
+
+        # recupero l’oggetto Product associato
+        for opt in e.control.options:
+            if opt.key == selected_key:
+                self.dd_prod_end_value  = opt.data
+                break
 
     def handle_best_prodotti(self, e):
         """ Handler per gestire la ricerca dei prodotti migliori """
@@ -64,4 +85,28 @@ class Controller:
 
     def handle_cerca_cammino(self, e):
         """ Handler per gestire il problema ricorsivo di ricerca del cammino """
-        # TODO
+        if self._view.txt_lunghezza_cammino.value == "":
+            self._view.txt_risultato.controls.clear()
+            self._view.txt_risultato.controls.append(ft.Text("Inserire lunghezza del cammino"))
+            self._view.update()
+            return
+        try:
+            lun = int(self._view.txt_lunghezza_cammino.value)
+        except ValueError:
+            self._view.txt_risultato.controls.clear()
+            self._view.txt_risultato.controls.append(ft.Text("Valore inserito non numerico"))
+            self._view.update()
+            return
+
+        path, score = self._model.get_best_path(lun, self.dd_prod_start_value, self.dd_prod_end_value)
+        if len(path) == 0:
+            self._view.txt_risultato.controls.clear()
+            self._view.txt_risultato.controls.append(ft.Text("Nessun cammino trovato"))
+            self._view.update()
+            return
+        self._view.txt_risultato.controls.clear()
+        self._view.txt_risultato.controls.append(ft.Text(f"Cammino migliore:"))
+        for p in path:
+            self._view.txt_risultato.controls.append(ft.Text(f"{p}"))
+        self._view.txt_risultato.controls.append(ft.Text(f"Score: {score}"))
+        self._view.update()
